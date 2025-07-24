@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe Coding Presentation Feedback</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .rating-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .rating-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        input[type="radio"] {
+            margin: 0;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: Arial, sans-serif;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: #007cba;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #005a87;
+        }
+        
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .confirmation {
+            display: none;
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .rating-group {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vibe Coding Presentation Feedback</h1>
+        
+        <form id="feedback-form">
+            <div class="form-group">
+                <label>How would you rate this presentation overall? (1-5)</label>
+                <div class="rating-group">
+                    <div class="rating-option">
+                        <input type="radio" id="rating1" name="rating" value="1" required>
+                        <label for="rating1">1</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" id="rating2" name="rating" value="2" required>
+                        <label for="rating2">2</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" id="rating3" name="rating" value="3" required>
+                        <label for="rating3">3</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" id="rating4" name="rating" value="4" required>
+                        <label for="rating4">4</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" id="rating5" name="rating" value="5" required>
+                        <label for="rating5">5</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="favorite-part">What was your favorite part?</label>
+                <textarea id="favorite-part" name="favorite-part" placeholder="Tell us what you enjoyed most..." required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="improvements">How can I improve this presentation?</label>
+                <textarea id="improvements" name="improvements" placeholder="Share your suggestions for improvement..." required></textarea>
+            </div>
+            
+            <button type="submit" id="submit-btn">Submit Feedback</button>
+        </form>
+        
+        <div id="confirmation" class="confirmation">
+            <h3>Thank you for your feedback!</h3>
+            <p>Your response has been recorded successfully.</p>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const SHEET_ID = 'YOUR_SHEET_ID_HERE'; // Replace with actual Sheet ID
+        const API_KEY = 'YOUR_API_KEY_HERE'; // Replace with actual API key if using API key method
+        
+        // Service Account Configuration (if using service account)
+        const SERVICE_ACCOUNT_EMAIL = 'YOUR_SERVICE_ACCOUNT_EMAIL';
+        const PRIVATE_KEY = 'YOUR_PRIVATE_KEY'; // Replace with actual private key
+        
+        document.getElementById('feedback-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const form = document.getElementById('feedback-form');
+            const confirmation = document.getElementById('confirmation');
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            // Get form data
+            const formData = new FormData(form);
+            const rating = formData.get('rating');
+            const favoritePart = formData.get('favorite-part');
+            const improvements = formData.get('improvements');
+            const timestamp = new Date().toISOString();
+            
+            console.log('Form data:', { rating, favoritePart, improvements, timestamp });
+            
+            try {
+                // Prepare data for Google Sheets
+                const rowData = [
+                    timestamp,
+                    rating,
+                    favoritePart,
+                    improvements
+                ];
+                
+                // Submit to Google Sheets
+                await submitToGoogleSheets(rowData);
+                
+                // Show confirmation
+                form.style.display = 'none';
+                confirmation.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error submitting feedback:', error);
+                
+                // Re-enable button on error
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Feedback';
+                
+                // For now, just log error - no UI error handling per PRD
+                alert('There was an error submitting your feedback. Please try again.');
+            }
+        });
+        
+        async function submitToGoogleSheets(rowData) {
+            // Method 1: Using Google Apps Script Web App (Recommended - enabled by default)
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbymDC95dtd9GxXv6miEDcXzEx6lgpNt-zkB3LVYqMSbyV42QRxmJx8MoV8vQ5ekUucUzQ/exec'; // Replace with your Apps Script URL
+            
+            const response = await fetch(scriptUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    data: rowData
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to submit to Google Sheets');
+            }
+            
+            return await response.json();
+            
+            // Method 2: Direct Sheets API (Alternative approach - commented out)
+            // Uncomment this section if you prefer direct API integration
+            /*
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Sheet1:append?valueInputOption=RAW&key=${API_KEY}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    values: [rowData]
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to submit to Google Sheets');
+            }
+            
+            return await response.json();
+            */
+        }
+    </script>
+</body>
+</html> 
